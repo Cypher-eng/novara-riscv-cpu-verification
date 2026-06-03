@@ -1,125 +1,154 @@
 #include "cpu.hpp"
+
+#include <fstream>
 #include <iostream>
 #include <sstream>
-#include <fstream>
-#include <algorithm>
+#include <stdexcept>
 
-// Constructor: Clear registers and memory (similar to hardware reset)
-CPU::CPU() {
-    for (int i = 0; i < 32; i++) registers[i] = 0;
-    for (int i = 0; i < 1024; i++) memory[i] = 0;
-    pc = 0;
-    halted = false;
+SimpleRiscVCPU::SimpleRiscVCPU() {
+    registers_.fill(0);
 }
 
-// Helper function: Clean up input characters for easier parsing
-std::string CPU::trim(const std::string& str) {
-    std::string s = str;
-    // Remove commas, carriage returns, and newlines
-    s.erase(std::remove(s.begin(), s.end(), ','), s.end());
-    s.erase(std::remove(s.begin(), s.end(), '\r'), s.end());
-    s.erase(std::remove(s.begin(), s.end(), '\n'), s.end());
-    return s;
+std::string SimpleRiscVCPU::trim(const std::string& text) {
+    const auto start = text.find_first_not_of(" \t\r\n");
+    if (start == std::string::npos) return "";
+    const auto end = text.find_last_not_of(" \t\r\n");
+    return text.substr(start, end - start + 1);
 }
 
-// Parse and execute the instruction
-void CPU::execute_line(const std::string& line) {
-    if (line.empty() || line[0] == '#') return; // Skip empty lines and comments
+std::vector<std::string> SimpleRiscVCPU::split(const std::string& text) {
+    std::stringstream ss(text);
+    std::string token;
+    std::vector<std::string> tokens;
+    while (ss >> token) {
+        if (!token.empty() && token.back() == ',') token.pop_back();
+        tokens.push_back(token);
+    }
+    return tokens;
+}
 
-    std::stringstream ss(line);
-    std::string opcode, reg_rd, reg_rs1, reg_rs2;
-    
-    ss >> opcode;
-    opcode = trim(opcode);
+int SimpleRiscVCPU::regIndex(const std::string& reg) {
+    if (reg.size() < 2 || reg[0] != 'x') {
+        throw std::runtime_error("Invalid register name: " + reg);
+    }
+    int index = std::stoi(reg.substr(1));
+    if (index < 0 || index > 31) {
+        throw std::runtime_error("Register index out of range: " + reg);
+    }
+    return index;
+}
 
-    // Auto-record coverage: Increment counter for this opcode
-    instruction_coverage[opcode]++;
-
-    // 1. Halt instruction
-    if (opcode == "HALT") {
-        halted = true;
-        return;
+bool SimpleRiscVCPU::loadProgram(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Could not open file: " << filename << "\n";
+        return false;
     }
 
-    // 2. R-type instructions (ADD, SUB, AND, OR, XOR, SLT, MUL)
-    if (opcode == "ADD" || opcode == "SUB" || opcode == "AND" || 
-        opcode == "OR"  || opcode == "XOR" || opcode == "SLT" || opcode == "MUL") {
-        ss >> reg_rd >> reg_rs1 >> reg_rs2;
-        
-        // Convert "x1" to integer 1
-        int rd = std::stoi(reg_rd.substr(1));
-        int rs1 = std::stoi(reg_rs1.substr(1));
-        int rs2 = std::stoi(reg_rs2.substr(1));
+    program_.clear();
+    labels_.clear();
+    pc_ = 0;
+    halted_ = false;
+    registers_.fill(0);
+    memory_.clear();
 
-        if (rd == 0) return; // x0 register is hardwired to 0, cannot be overwritten
+    std::string line;
+    while (std::getline(file, line)) {
+        const auto commentPos = line.find('#');
+        if (commentPos != std::string::npos) {
+            line = line.substr(0, commentPos);
+        }
+        line = trim(line);
+        if (line.empty()) continue;
 
-        if (opcode == "ADD")       registers[rd] = registers[rs1] + registers[rs2];
-        else if (opcode == "SUB")  registers[rd] = registers[rs1] - registers[rs2];
-        else if (opcode == "AND")  registers[rd] = registers[rs1] & registers[rs2];
-        else if (opcode == "OR")   registers[rd] = registers[rs1] | registers[rs2];
-        else if (opcode == "XOR")  registers[rd] = registers[rs1] ^ registers[rs2];
-        // ====== [Extension Code: SLT and MUL] ======
-        else if (opcode == "SLT")  registers[rd] = (registers[rs1] < registers[rs2]) ? 1 : 0;
-        else if (opcode == "MUL")  registers[rd] = registers[rs1] * registers[rs2];
-    }
-    // 3. I-type instructions (ADDI)
-    else if (opcode == "ADDI") {
-        std::string imm_str;
-        ss >> reg_rd >> reg_rs1 >> imm_str;
-        int rd = std::stoi(reg_rd.substr(1));
-        int rs1 = std::stoi(reg_rs1.substr(1));
-        int32_t imm = std::stoi(imm_str);
-
-        if (rd == 0) return;
-        registers[rd] = registers[rs1] + imm;
-    }
-    // 4. Memory instructions (LW, SW) -> Simplified using array index as address
-    else if (opcode == "LW" || opcode == "SW") {
-        std::string addr_str;
-        ss >> reg_rd >> addr_str;
-        int rd = std::stoi(reg_rd.substr(1));
-        int addr = std::stoi(addr_str);
-
-        if (opcode == "LW") {
-            if (rd != 0) registers[rd] = memory[addr];
-        } else if (opcode == "SW") {
-            memory[addr] = registers[rd]; // Store register value into memory
+        if (!line.empty() && line.back() == ':') {
+            std::string label = line.substr(0, line.size() - 1);
+            labels_[label] = static_cast<int>(program_.size());
+        } else {
+            program_.push_back(line);
         }
     }
-    // 5. Branch instructions (BEQ, BNE) -> Simplified: only reads, does not alter PC flow
-    else if (opcode == "BEQ" || opcode == "BNE") {
-        ss >> reg_rs1 >> reg_rs2;
-    }
-    
-    pc += 4; // Simulate PC increment
+    return true;
 }
 
-// Print register state
-void CPU::print_registers() {
-    std::cout << "--- Final Register State ---" << std::endl;
-    for (int i = 0; i < 8; i++) { // Print first 8 commonly used registers for readability
-        std::cout << "x" << i << " = " << registers[i] << "\t";
-        if (i % 4 == 3) std::cout << std::endl;
+void SimpleRiscVCPU::run() {
+    while (!halted_ && pc_ >= 0 && pc_ < static_cast<int>(program_.size())) {
+        executeLine(program_[pc_]);
+        keepZeroRegisterConstant();
     }
-    std::cout << "----------------------------" << std::endl;
 }
 
-// ====== [Extension Code: Export CSV Report] ======
-void CPU::export_coverage_csv(const std::string& filename) {
-    std::ofstream file(filename);
-    if (!file.is_open()) {
-        std::cerr << "Error: Unable to create coverage report file!" << std::endl;
+void SimpleRiscVCPU::executeLine(const std::string& line) {
+    auto tokens = split(line);
+    if (tokens.empty()) {
+        pc_++;
         return;
     }
 
-    // Write CSV header
-    file << "Instruction_Opcode,Execution_Count,Verification_Status\n";
-    
-    // Iterate through the map and record execution counts
-    for (const auto& pair : instruction_coverage) {
-        file << pair.first << "," << pair.second << ",PASSED\n";
-    }
+    const std::string& op = tokens[0];
 
-    file.close();
-    std::cout << ">> [Verification Success] Coverage report exported to: " << filename << std::endl;
+    if (op == "ADD") {
+        registers_[regIndex(tokens[1])] = registers_[regIndex(tokens[2])] + registers_[regIndex(tokens[3])];
+        pc_++;
+    } else if (op == "SUB") {
+        registers_[regIndex(tokens[1])] = registers_[regIndex(tokens[2])] - registers_[regIndex(tokens[3])];
+        pc_++;
+    } else if (op == "ADDI") {
+        registers_[regIndex(tokens[1])] = registers_[regIndex(tokens[2])] + std::stoi(tokens[3]);
+        pc_++;
+    } else if (op == "AND") {
+        registers_[regIndex(tokens[1])] = registers_[regIndex(tokens[2])] & registers_[regIndex(tokens[3])];
+        pc_++;
+    } else if (op == "OR") {
+        registers_[regIndex(tokens[1])] = registers_[regIndex(tokens[2])] | registers_[regIndex(tokens[3])];
+        pc_++;
+    } else if (op == "XOR") {
+        registers_[regIndex(tokens[1])] = registers_[regIndex(tokens[2])] ^ registers_[regIndex(tokens[3])];
+        pc_++;
+    } else if (op == "LW") {
+        int address = std::stoi(tokens[2]);
+        registers_[regIndex(tokens[1])] = memory_[address];
+        pc_++;
+    } else if (op == "SW") {
+        int address = std::stoi(tokens[2]);
+        memory_[address] = registers_[regIndex(tokens[1])];
+        pc_++;
+    } else if (op == "BEQ") {
+        if (registers_[regIndex(tokens[1])] == registers_[regIndex(tokens[2])]) {
+            pc_ = labels_.at(tokens[3]);
+        } else {
+            pc_++;
+        }
+    } else if (op == "BNE") {
+        if (registers_[regIndex(tokens[1])] != registers_[regIndex(tokens[2])]) {
+            pc_ = labels_.at(tokens[3]);
+        } else {
+            pc_++;
+        }
+    } else if (op == "HALT") {
+        halted_ = true;
+    } else {
+        throw std::runtime_error("Unknown instruction: " + op);
+    }
+}
+
+void SimpleRiscVCPU::keepZeroRegisterConstant() {
+    registers_[0] = 0;
+}
+
+void SimpleRiscVCPU::printRegisters() const {
+    std::cout << "Final Register State:\n";
+    for (int i = 0; i < 8; ++i) {
+        std::cout << "x" << i << " = " << registers_[i] << "\n";
+    }
+}
+
+int32_t SimpleRiscVCPU::getRegister(int index) const {
+    return registers_.at(index);
+}
+
+int32_t SimpleRiscVCPU::getMemory(int address) const {
+    auto it = memory_.find(address);
+    if (it == memory_.end()) return 0;
+    return it->second;
 }

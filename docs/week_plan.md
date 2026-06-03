@@ -1,74 +1,39 @@
-# 5-Week Project Plan
+# NOVARA RISC-V CPU Verification Project
 
-## Week 1: CPU and RISC-V Foundations
+## Week 1 – Processor Foundations
+- What is a CPU?
+- Introduction to RISC-V
+- Registers, Memory and Instructions
+Deliverable: CPU Architecture Summary
 
-Students learn:
+## Week 2 – Build a Verification Testbench
+- Run the simulator
+- Understand the verification flow
+- Create custom test programs
+Deliverable: Basic Verification Log
 
-- what a CPU does
-- what registers are
-- what instructions are
-- basic RISC-V instruction types
+## Week 3 – Functional Verification
+- Arithmetic Tests
+- Memory Tests
+- Branch Tests
+Deliverable: Verification Report v1
 
-Tasks:
+## Week 4 – Debugging Challenge
+- Inject a bug
+- Trace register values
+- Identify the root cause
+Deliverable: Debugging Report
 
-- read the README
-- run the arithmetic test
-- explain each instruction in `arithmetic.asm`
+## Week 5 – Coverage & Presentation
+- Instruction coverage analysis
+- Engineering presentation
+- GitHub portfolio polishing
 
----
-
-## Week 2: C++ Testbench Basics
-
-Students learn:
-
-- how the CPU class is structured
-- how programs are loaded
-- how registers are updated
-
-Tasks:
-
-- run all provided tests
-- modify the arithmetic test
-- record pass/fail output
-
----
-
-## Week 3: Functional Verification
-
-Students learn:
-
-- what expected results mean
-- how to compare expected vs actual outputs
-- why verification is important in chip design
-
-Tasks:
-
-- create one new test file
-- add expected results
-- explain what your test checks
-
----
-
-## Week 4: Debugging and Extension
-
-Students learn:
-
-- how to find simple bugs
-- how to trace register values
-- how to add a new instruction
-
-Suggested extension:
-
-- add `SLT rd rs1 rs2`
-- create a test for it
-
----
-
-## Week 5: Final Report and Presentation
-
-Students complete:
-
-- final technical report
-- GitHub repository cleanup
-- short presentation slides
-- project reflection
+Final Deliverables:
+- RISC-V CPU Simulator
+- Verification Testbench
+- Functional Test Suite
+- Verification Report
+- Coverage Analysis
+- Final Presentation
+- GitHub Repository

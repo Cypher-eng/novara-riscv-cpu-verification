@@ -164,53 +164,14 @@ It is suitable for students applying to:
 
 This is an educational project for pre-university students. It is intentionally simplified and does not represent a complete industrial RISC-V processor.
 
-## 🚀 Extensions Added (Advanced Verification)
 
-This project has been extended to include more advanced instructions and professional functional coverage tracking, bridging the gap between educational simulation and real-world chip verification.
+## Advanced Deliverables
 
-### New Supported Instructions
-| Instruction | Meaning |
-| ----------- | ------- |
-| `SLT rd rs1 rs2` | Set Less Than: `rd = (rs1 < rs2) ? 1 : 0` |
-| `MUL rd rs1 rs2` | Multiply: `rd = rs1 * rs2` |
+Students will also complete:
 
-### Professional Verification Feature: Coverage CSV Export
-The CPU simulator now tracks **Instruction Coverage** automatically. Every time an instruction is decoded and executed, the simulator records it. Upon completion, it exports a professional `coverage_report.csv` file, demonstrating industrial hardware verification workflows.
+- Verification Report
+- Debugging Challenge
+- Coverage Analysis
+- Engineering Presentation
 
----
-
-### How to Compile and Run the Extension Tests
-
-**1. Compile the project**
-Open your terminal in the project root directory and run the `make` command to build the executable:
-```bash
-make
-```
-
-**2. Run the extended test cases**
-Execute the testbench and pass the new assembly test file as an argument:
-```bash
-./riscv_testbench tests/extension_test.asm
-```
-
-**3. Check the Output**
-If successful, the terminal will display the final state of the registers and notify you that the coverage report was successfully generated:
-```text
-Running verification program: tests/extension_test.asm
---- Final Register State ---
-x0 = 0    x1 = 10   x2 = 20   x3 = 200  
-x4 = 1    x5 = 0    x6 = 201  x7 = 0    
-----------------------------
->> [Verification Success] Coverage report exported to: coverage_report.csv
-```
-
-**4. View the Coverage Report**
-Check your project directory for `coverage_report.csv`. You can open this file in Excel, VSCode, or Numbers to see how many times each instruction was executed and verified during the simulation.
-
-**5. Clean build files (Optional)**
-To remove the generated executable and clean up your workspace, run:
-```bash
-make clean
-```
-
-
+This project simulates the workflow of a junior CPU Verification Engineer.

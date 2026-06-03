@@ -1,44 +1,35 @@
-#ifndef CPU_HPP
-#define CPU_HPP
+#ifndef SIMPLE_RISCV_CPU_HPP
+#define SIMPLE_RISCV_CPU_HPP
 
-#include <vector>
-#include <string>
-#include <map>
+#include <array>
 #include <cstdint>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
-class CPU {
+class SimpleRiscVCPU {
 public:
-    // 32 general-purpose registers, corresponding to RISC-V x0 to x31
-    int32_t registers[32];
-    
-    // Simplified data memory (1024 words)
-    int32_t memory[1024];
-    
-    // Program Counter
-    uint32_t pc;
-    
-    // Halt flag
-    bool halted;
+    SimpleRiscVCPU();
 
-    // [Extension] Functional coverage tracker
-    // Tracks how many times each instruction (e.g., "ADD") is executed
-    std::map<std::string, int> instruction_coverage;
-
-    // Constructor: Initializes the CPU state
-    CPU();
-
-    // Executes a single instruction string (includes parsing)
-    void execute_line(const std::string& line);
-
-    // Prints the current state of all registers
-    void print_registers();
-
-    // [Extension] Exports verification coverage to a CSV file
-    void export_coverage_csv(const std::string& filename);
+    bool loadProgram(const std::string& filename);
+    void run();
+    void printRegisters() const;
+    int32_t getRegister(int index) const;
+    int32_t getMemory(int address) const;
 
 private:
-    // Helper function: Removes spaces and commas from strings
-    std::string trim(const std::string& str);
+    std::array<int32_t, 32> registers_{};
+    std::unordered_map<int, int32_t> memory_;
+    std::vector<std::string> program_;
+    std::unordered_map<std::string, int> labels_;
+    int pc_ = 0;
+    bool halted_ = false;
+
+    void executeLine(const std::string& line);
+    static std::string trim(const std::string& text);
+    static std::vector<std::string> split(const std::string& text);
+    static int regIndex(const std::string& reg);
+    void keepZeroRegisterConstant();
 };
 
-#endif // CPU_HPP
+#endif
