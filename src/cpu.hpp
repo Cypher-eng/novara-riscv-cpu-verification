@@ -1,35 +1,34 @@
-#ifndef SIMPLE_RISCV_CPU_HPP
-#define SIMPLE_RISCV_CPU_HPP
+#ifndef CPU_HPP
+#define CPU_HPP
 
-#include <array>
-#include <cstdint>
-#include <string>
-#include <unordered_map>
 #include <vector>
+#include <string>
+#include <map>
+#include <cstdint>
 
-class SimpleRiscVCPU {
+class CPU {
 public:
-    SimpleRiscVCPU();
+    int32_t registers[32];
 
-    bool loadProgram(const std::string& filename);
-    void run();
-    void printRegisters() const;
-    int32_t getRegister(int index) const;
-    int32_t getMemory(int address) const;
+    int32_t memory[1024];
+    
+
+    uint32_t pc;
+    
+    bool halted;
+
+    std::map<std::string, int> instruction_coverage;
+
+    CPU();
+
+    void execute_line(const std::string& line);
+
+    void print_registers();
+
+    void export_coverage_csv(const std::string& filename);
 
 private:
-    std::array<int32_t, 32> registers_{};
-    std::unordered_map<int, int32_t> memory_;
-    std::vector<std::string> program_;
-    std::unordered_map<std::string, int> labels_;
-    int pc_ = 0;
-    bool halted_ = false;
-
-    void executeLine(const std::string& line);
-    static std::string trim(const std::string& text);
-    static std::vector<std::string> split(const std::string& text);
-    static int regIndex(const std::string& reg);
-    void keepZeroRegisterConstant();
+    std::string trim(const std::string& str);
 };
 
-#endif
+#endif // CPU_HPP
