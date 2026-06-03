@@ -1,8 +1,0 @@
-instruction,count
-ADD,0
-SUB,0
-ADDI,0
-LW,0
-SW,0
-BEQ,0
-BNE,0
