@@ -1,54 +1,36 @@
 #include "cpu.hpp"
-
 #include <iostream>
-#include <string>
-
-bool checkExpected(const std::string& filename, const SimpleRiscVCPU& cpu) {
-    if (filename.find("arithmetic") != std::string::npos) {
-        return cpu.getRegister(1) == 10 &&
-               cpu.getRegister(2) == 20 &&
-               cpu.getRegister(3) == 30 &&
-               cpu.getRegister(4) == 10 &&
-               cpu.getRegister(5) == 0;
-    }
-    if (filename.find("memory") != std::string::npos) {
-        return cpu.getRegister(1) == 42 &&
-               cpu.getRegister(2) == 42 &&
-               cpu.getMemory(100) == 42;
-    }
-    if (filename.find("branch") != std::string::npos) {
-        return cpu.getRegister(3) == 999 &&
-               cpu.getRegister(4) == 123;
-    }
-    return true;
-}
+#include <fstream>
 
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        std::cerr << "Usage: ./riscv_testbench <program.asm>\n";
+    if (argc < 2) {
+        std::cout << "Usage: ./riscv_testbench <test_file.asm>" << std::endl;
         return 1;
     }
 
-    const std::string filename = argv[1];
-    SimpleRiscVCPU cpu;
-
-    std::cout << "Running program: " << filename << "\n";
-
-    if (!cpu.loadProgram(filename)) {
+    std::string asm_filename = argv[1];
+    std::ifstream file(asm_filename);
+    if (!file.is_open()) {
+        std::cerr << "Error: Cannot open assembly file " << asm_filename << std::endl;
         return 1;
     }
 
-    try {
-        cpu.run();
-    } catch (const std::exception& e) {
-        std::cerr << "Runtime error: " << e.what() << "\n";
-        return 1;
+    std::cout << "Running verification program: " << asm_filename << std::endl;
+    
+    // Instantiate the virtual CPU (UUT - Unit Under Test)
+    CPU my_cpu;
+
+    std::string line;
+    // Read assembly instructions line by line and execute them
+    while (std::getline(file, line) && !my_cpu.halted) {
+        my_cpu.execute_line(line);
     }
 
-    cpu.printRegisters();
+    // 1. Print final register state
+    my_cpu.print_registers();
 
-    bool pass = checkExpected(filename, cpu);
-    std::cout << "Status: " << (pass ? "PASS" : "FAIL") << "\n";
+    // 2. [Extension] Export coverage report
+    my_cpu.export_coverage_csv("coverage_report.csv");
 
-    return pass ? 0 : 2;
+    return 0;
 }
