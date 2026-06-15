@@ -1,61 +1,63 @@
-# NOVARA RISC-V CPU Verification Project
+# NOVARA RISC-V CPU Verification
 
-A 5-week project-based introduction to **RISC-V processor verification**, **C++ testbench design**, **debugging**, and **engineering communication** for pre-university students.
+A 5-week, project-based introduction to **RISC-V processor verification**, **C++ testbench design**, **debugging**, and **engineering communication**, built for pre-university students.
 
-This repository is designed for A-Level, AP, and IB students who are interested in Engineering, Computer Science, Electronic Engineering, Computer Architecture, or Chip Design.
+This repository is designed for A-Level, AP, and IB students interested in Engineering, Computer Science, Electronic Engineering, Computer Architecture, or Chip Design. No prior CPU design experience is required — basic programming helps, but every week is guided step by step.
 
-## Project Goal
+---
 
-Students will build and use a simplified RISC-V CPU simulator and verification testbench.  
-By the end of the project, students will be able to explain how basic CPU instructions work, write functional tests, debug incorrect behaviour, and present their results in an engineering-style format.
+## What students build
 
-## What Students Will Learn
+Students use a working, simplified RISC-V CPU simulator and a C++ verification testbench. They do not implement the processor from scratch. Instead, they do what real verification engineers do: write functional tests, predict expected results, read execution traces, hunt down a planted bug, measure coverage, and present their findings in an engineering format.
 
-- What a CPU does
-- What an instruction set architecture is
-- Why RISC-V matters
-- How registers and memory work
-- How verification engineers test processors
-- How to write simple test programs
-- How to debug incorrect CPU behaviour
-- How to create a verification report
-- How to present an engineering project
+By the end, a student can explain how basic CPU instructions execute, write their own tests in assembly, debug incorrect behaviour from evidence, and communicate the result clearly.
 
-## 5-Week Structure
+---
 
-| Week | Theme | Student Output |
-|---|---|---|
-| Week 1 | CPU and RISC-V Foundations | CPU architecture worksheet |
-| Week 2 | Running the Simulator | First verification log |
-| Week 3 | Writing Functional Tests | Verification report v1 |
-| Week 4 | Debugging Challenge | Debugging report |
-| Week 5 | Coverage and Presentation | Final report + presentation |
+## How the course is taught
 
-## Final Deliverables
+Each week has **one 60-minute main lecture** delivered by the lead instructor, followed by **hands-on lab time run by the teaching assistants**. The lecture sets up the concept and the mindset; the lab is where students do the work.
 
-Students will complete:
+| Week | Main lecture (lead instructor, 60 min) | Lab (teaching assistants) | Student output |
+|---|---|---|---|
+| 1 | What is a CPU, and why verify it? | CPU foundations worksheet | Architecture worksheet |
+| 2 | Inside the simulator | Build and run the testbench | First verification log |
+| 3 | The art of testing | Write your own functional tests | Verification report v1 |
+| 4 | Finding the bug | Debugging challenge | Debugging report |
+| 5 | Coverage and communication | Coverage + final presentation | Final report + presentation |
 
-- GitHub project repository
-- RISC-V functional test suite
-- Verification report
-- Debugging report
-- Coverage summary
-- Final presentation slides
+The five lecture decks live alongside the weekly notes and are meant to be presented as-is by the lead instructor. Everything else — setup help, code walkthroughs, debugging support, report feedback — is handled by the TAs in lab.
 
-## Repository Structure
+---
+
+## The CPU core
+
+The simulator is a single-cycle interpreter: 32 registers, 256 words of memory, one instruction per step. It is intentionally small and heavily commented so students can read the whole thing.
+
+**Supported instruction set (RV32I subset, 20 instructions):**
+
+- Register–register: `ADD SUB AND OR XOR SLL SRL SLT`
+- Immediate: `ADDI ANDI ORI SLLI SLTI`
+- Memory: `LW SW`
+- Branch: `BEQ BNE BLT BGE`
+- Jump: `JAL`
+
+The first seven (`ADD SUB ADDI LW SW BEQ BNE`) are the required core every student must understand. The rest exist so stronger students can write richer tests and push their coverage higher.
+
+**Execution traces.** Every instruction prints a human-readable line showing its operands and result, for example:
 
 ```text
-starter/        Student starter code
-solution/       Reference solution for instructors or later release
-lectures/       Weekly lesson notes
-labs/           Weekly lab instructions
-project/        Milestone tasks
-deliverables/   Report and presentation templates
-resources/      Beginner-friendly explanations
-examples/       Example final outputs
+PC=2  ADD x3, x1, x2  | x3 = 5 + 3 = 8
+PC=5  BGE x4, x2, loop | 5 >= 2 -> taken, PC -> 3
 ```
 
-## Quick Start
+The trace is the heart of the Week 4 debugging lab: when a test fails, the trace shows exactly what the CPU did, so students debug from evidence rather than guesswork.
+
+**Robustness.** Out-of-range registers, lowercase mnemonics, comments, and malformed programs all produce clear, friendly errors instead of crashing the testbench. Infinite loops are detected and reported rather than running silently to the step limit.
+
+---
+
+## Quick start
 
 ```bash
 cd starter
@@ -66,12 +68,57 @@ make
 Expected output:
 
 ```text
-[PASS] arithmetic_basic.asm
-[PASS] memory_basic.asm
-[PASS] branch_basic.asm
+[PASS] programs/arithmetic_basic.asm
+[PASS] programs/memory_basic.asm
+[PASS] programs/branch_basic.asm
+[PASS] programs/logic_basic.asm
+[PASS] programs/loop_sum.asm
+[PASS] programs/jump_basic.asm
+
+Summary: 6/6 tests passed.
 ```
 
-## Student Level
+Generate a coverage report:
 
-No prior CPU design experience is required.  
-Basic programming experience is helpful, but the project is designed to be guided step by step.
+```bash
+make coverage
+```
+
+This writes `coverage.csv` and prints which instructions the test suite has exercised. One instruction is deliberately left untested as a Week 5 exercise.
+
+---
+
+## The Week 4 debugging challenge
+
+`starter/src/cpu_buggy_example.cpp` is a swap-in copy of the core with a single planted bug: the `ADD` instruction computes a subtraction. The trace description still prints `+`, so a failing test produces a self-evidently wrong line such as `x3 = 5 + 3 = 2`. Students follow that contradiction back to the root cause. To run the lab version, compile this file in place of `cpu.cpp`.
+
+---
+
+## Final deliverables
+
+Students complete a GitHub project repository, a RISC-V functional test suite, a verification report, a debugging report, a coverage summary, and a final presentation. Recommendation letters are considered — never automatic — for students who show meaningful technical contribution, clear understanding, and professional communication.
+
+---
+
+## Repository structure
+
+```text
+starter/        Student starter code (working CPU + the buggy example for Week 4)
+solution/       Reference solution for instructors
+lectures/       Weekly lesson notes
+labs/           Weekly lab instructions (TA-led)
+project/        Milestone tasks
+deliverables/   Report, presentation, and rubric templates
+resources/      Beginner-friendly explanations
+examples/       Example final outputs
+```
+
+### Core source files
+
+```text
+src/cpu.h          CPU interface (register/memory sizes, run loop, trace)
+src/cpu.cpp        The CPU core: fetch-execute loop + all 20 instructions
+src/parser.cpp     Assembly parser (case-insensitive, comment-aware, validated)
+src/testbench.cpp  Runs each program, checks results, prints traces on failure
+tests/coverage.py  Scans programs and reports instruction coverage
+```
